@@ -192,17 +192,17 @@ export function buildExternalGearPath(c, inp, { cx, cy }){
     ...rootPts,
   ];
 
-  // Replicate around circle
-  const all = [];
+  // Replicate around circle as separate closed tooth outlines
+  const els = [];
+  const polylines = [];
   for(let k=0;k<N;k++){
     const a = k * (2*Math.PI/N);
-    for(const p of toothPts){
-      all.push(translate(rotate(p, a), cx, cy));
-    }
+    const poly = toothPts.map(p => translate(rotate(p, a), cx, cy));
+    polylines.push(poly);
+    els.push(svgPath(pathFromPoints(poly, true)));
   }
 
-  const d = pathFromPoints(all, true);
-  return { el: svgPath(d), points: all };
+  return { els, polylines };
 }
 
 export function buildInternalGearPath(c, inp, { cx, cy }){
@@ -274,16 +274,16 @@ export function buildInternalGearPath(c, inp, { cx, cy }){
     ...rootPts,
   ];
 
-  const all = [];
+  const els = [];
+  const polylines = [];
   for(let k=0;k<N;k++){
     const a = k * (2*Math.PI/N);
-    for(const p of toothSpace){
-      all.push(translate(rotate(p, a), cx, cy));
-    }
+    const poly = toothSpace.map(p => translate(rotate(p, a), cx, cy));
+    polylines.push(poly);
+    els.push(svgPath(pathFromPoints(poly, true)));
   }
 
-  const d = pathFromPoints(all, true);
-  return { el: svgPath(d), points: all };
+  return { els, polylines };
 }
 
 export function buildRackPath(c, inp, { x, y }){

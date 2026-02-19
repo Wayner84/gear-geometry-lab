@@ -195,8 +195,9 @@ function update(){
     const root = svgEl('circle', { cx, cy, r: c.Dr/2, class: 'root' });
     const center = svgEl('circle', { cx, cy, r: 3.2, class: 'centerDot' });
 
-    g.append(pitch, base, root, gear.el, center);
-    window.__lastPolylines = [gear.points];
+    g.append(pitch, base, root, center);
+    (gear.els || []).forEach(el => g.append(el));
+    window.__lastPolylines = gear.polylines || [];
 
     // dim: outside diameter
     drawDimLine(dimsG, cx - c.Do/2, cy - c.Do/2 - 32, cx + c.Do/2, cy - c.Do/2 - 32, `Do ${fmt(c.Do, unit)} ${unitLabel}`);
