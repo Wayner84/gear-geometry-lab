@@ -4,37 +4,39 @@ import { bboxFromPolylines, fitScaleToViewBox } from './fit.js';
 
 const $ = (id) => document.getElementById(id);
 
-const els = {
-  type: $('type'),
-  units: $('units'),
-  teeth: $('teeth'),
-  pitchDiameter: $('pitchDiameter'),
-  pressureAngle: $('pressureAngle'),
-  backlash: $('backlash'),
-  addendum: $('addendum'),
-  dedendum: $('dedendum'),
-  rackLength: $('rackLength'),
-  // thickness removed (2D-only exports)
-  samples: $('samples'),
+let els;
+function hydrateEls(){
+  els = {
+    type: $('type'),
+    units: $('units'),
+    teeth: $('teeth'),
+    pitchDiameter: $('pitchDiameter'),
+    pressureAngle: $('pressureAngle'),
+    backlash: $('backlash'),
+    addendum: $('addendum'),
+    dedendum: $('dedendum'),
+    rackLength: $('rackLength'),
+    samples: $('samples'),
 
-  dims: $('dims'),
+    dims: $('dims'),
 
-  svg: $('svg'),
-  drawing: $('drawing'),
-  dimsLayer: $('dimsLayer'),
-  legend1: $('legendLine1'),
-  legend2: $('legendLine2'),
-  legend3: $('legendLine3'),
+    svg: $('svg'),
+    drawing: $('drawing'),
+    dimsLayer: $('dimsLayer'),
+    legend1: $('legendLine1'),
+    legend2: $('legendLine2'),
+    legend3: $('legendLine3'),
 
-  btnCopyDims: $('btnCopyDims'),
-  btnDownloadSVG: $('btnDownloadSVG'),
-  btnDownloadDXF: $('btnDownloadDXF'),
+    btnCopyDims: $('btnCopyDims'),
+    btnDownloadSVG: $('btnDownloadSVG'),
+    btnDownloadDXF: $('btnDownloadDXF'),
 
-  zoomIn: $('zoomIn'),
-  zoomOut: $('zoomOut'),
-  zoomReset: $('zoomReset'),
-  viewport: $('viewport'),
-};
+    zoomIn: $('zoomIn'),
+    zoomOut: $('zoomOut'),
+    zoomReset: $('zoomReset'),
+    viewport: $('viewport'),
+  };
+}
 
 let camera = { x: 0, y: 0, k: 1 };
 let isPanning = false;
@@ -301,6 +303,24 @@ function bind(){
   });
 }
 
-initPanZoom();
-bind();
-update();
+function boot(){
+  hydrateEls();
+
+  // If something is still missing (e.g. very slow DOM), retry once.
+  const required = ['type','units','teeth','pressureAngle','dims','svg','viewport','btnDownloadSVG'];
+  const missing = required.filter((id) => !document.getElementById(id));
+  if(missing.length){
+    setTimeout(boot, 50);
+    return;
+  }
+
+  initPanZoom();
+  bind();
+  update();
+}
+
+if(document.readyState === 'loading'){
+  window.addEventListener('DOMContentLoaded', boot, { once:true });
+} else {
+  boot();
+}
