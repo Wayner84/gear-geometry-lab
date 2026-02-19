@@ -286,59 +286,84 @@ export function buildInternalGearPath(c, inp, { cx, cy }){
 }
 
 export function buildRackPath(c, inp, { x, y }){
-  // Rack at baseline y, extending in +y for addendum, -y for dedendum.
+  // Rack polygon: baseline at y (pitch line), tip at y-a, root at y+b.
+  // We build a monotonic outline left→right (no self-crossing) suitable for CAD import.
+
   const p = c.p;
   const phi = c.phi;
-
   const L = c.rackLength;
-  const teethShown = Math.max(2, Math.floor(inp.N || Math.ceil(L/p)));
-  const pitchCount = Math.max(2, Math.ceil(L / p));
-  const count = Math.max(teethShown, pitchCount);
-
-  const a = c.a, b = c.b;
-
-  // Tooth thickness at pitch on rack is s (linear). Half thickness.
-  const half = c.s / 2;
-
-  // Flank slope determined by pressure angle: tan(phi) = rise/run.
-  // For a given vertical rise (a + b), horizontal run = (a+b) / tan(phi)
-  const h = a + b;
-  const run = h / Math.tan(phi);
-
-  // Build a repeated tooth profile polyline.
-  // We draw from left to right, staying within [x, x+L].
-  const pts = [];
   const x0 = x;
   const x1 = x + L;
 
-  // Start at left root
-  pts.push({ x: x0, y: y + b });
-  pts.push({ x: x0, y: y - a });
+  const a = c.a;
+  const b = c.b;
+  const yTip = y - a;
+  const yRoot = y + b;
 
-  for(let i=0;i<=count;i++){
+  const half = c.s / 2; // half tooth thickness at pitch
+
+  // Horizontal run per flank from root→tip (based on pressure angle)
+  const h = a + b;
+  const run = h / Math.tan(phi);
+
+  // Choose enough teeth to cover the rack span.
+  const count = Math.max(2, Math.ceil(L / p) + 2);
+
+  // Top/tooth outline points along the boundary (we'll close with the bottom edge).
+  const top = [];
+
+  // Seed at left root
+  top.push({ x: x0, y: yRoot });
+
+  for(let i = -1; i <= count; i++){
     const xc = x0 + i * p;
 
-    // tip plateau centered on pitch line around xc
+    // Define the tooth's key x locations
+    const rootL = xc - half - run;
     const tipL = xc - half;
     const tipR = xc + half;
+    const rootR = xc + half + run;
 
-    // compute roots with flank run
-    const rootL = tipL - run;
-    const rootR = tipR + run;
+    // Clamp to rack span so bbox/fit behaves and exports are exact length.
+    const rL = Math.max(x0, Math.min(x1, rootL));
+    const tL = Math.max(x0, Math.min(x1, tipL));
+    const tR = Math.max(x0, Math.min(x1, tipR));
+    const rR = Math.max(x0, Math.min(x1, rootR));
 
-    // Add this tooth if within extents.
-    // left flank up
-    if(rootL >= x0 - p && rootL <= x1 + p) pts.push({ x: rootL, y: y + b });
-    if(tipL >= x0 - p && tipL <= x1 + p) pts.push({ x: tipL, y: y - a });
-    if(tipR >= x0 - p && tipR <= x1 + p) pts.push({ x: tipR, y: y - a });
-    // right flank down
-    if(rootR >= x0 - p && rootR <= x1 + p) pts.push({ x: rootR, y: y + b });
+    // Only add if this tooth intersects the [x0,x1] region meaningfully.
+    const intersects = (rootR >= x0 && rootL <= x1);
+    if(!intersects) continue;
+
+    // Append in increasing x order, avoiding duplicate x points.
+    const push = (pt) => {
+      const last = top[top.length-1];
+      if(!last || Math.abs(last.x - pt.x) > 1e-6 || Math.abs(last.y - pt.y) > 1e-6) top.push(pt);
+    };
+
+    // root → tip left flank
+    push({ x: rL, y: yRoot });
+    push({ x: tL, y: yTip });
+    // tip plateau
+    push({ x: tR, y: yTip });
+    // tip → root right flank
+    push({ x: rR, y: yRoot });
   }
 
-  // Close shape by returning to right top then right bottom then back.
-  pts.push({ x: x1, y: y + b });
+  // Ensure we end exactly at right root.
+  if(top.length === 0 || top[top.length-1].x !== x1) top.push({ x: x1, y: yRoot });
 
-  const d = pathFromPoints(pts.map(p => p), true);
+  // Close with bottom edge (simple rectangle bottom). Many racks are modeled as a profile that you extrude.
+  // If you want a thinner backing plate, we can add a "backing height" input later.
+  const backing = Math.max(0.0001, b * 1.2);
+  const yBack = yRoot + backing;
+
+  const pts = [
+    ...top,
+    { x: x1, y: yBack },
+    { x: x0, y: yBack },
+  ];
+
+  const d = pathFromPoints(pts, true);
   return { el: svgPath(d), points: pts };
 }
 
@@ -346,7 +371,7 @@ function svgPath(d){
   const path = document.createElementNS('http://www.w3.org/2000/svg','path');
   path.setAttribute('d', d);
   path.setAttribute('class', 'gearStroke');
-  path.setAttribute('vector-effect', 'non-scaling-stroke');
+  // Note: we intentionally allow stroke to scale with zoom so the preview doesn't look like a blob when zoomed out.
   return path;
 }
 
