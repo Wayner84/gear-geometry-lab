@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gear Geometry Lab</title>
+    <meta name="description" content="Generate rack, external spur, and internal spur gear geometry + key CAD dimensions. Preview as a dimensioned blueprint." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=IBM+Plex+Mono:wght@300;400;600&display=swap" rel="stylesheet" />
+
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%230d1b2a' d='M50 4l10 9 13-3 4 13 13 4-3 13 9 10-9 10 3 13-13 4-4 13-13-3-10 9-10-9-13 3-4-13-13-4 3-13-9-10 9-10-3-13 13-4 4-13 13 3z'/%3E%3Cpath fill='%23e0fbfc' d='M50 26a24 24 0 1024 24 24 24 0 00-24-24zm0 12a12 12 0 1012 12 12 12 0 00-12-12z'/%3E%3C/svg%3E" />
+
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="top">
+      <div class="brand">
+        <div class="mark" aria-hidden="true"></div>
+        <div>
+          <div class="title">Gear Geometry Lab</div>
+          <div class="subtitle">Blueprint-grade involute gear + rack generator for 3D printing</div>
+        </div>
+      </div>
+
+      <div class="topActions">
+        <button class="btn" id="btnDownloadSVG" type="button">Download SVG</button>
+        <button class="btn btnPrimary" id="btnCopyDims" type="button">Copy dimensions</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="panel" aria-label="Inputs">
+        <section class="card">
+          <div class="cardHead">
+            <h2>Generator</h2>
+            <p class="muted">Choose a part, then drive it using the numbers you actually care about.</p>
+          </div>
+
+          <div class="grid">
+            <label class="field">
+              <span>Type</span>
+              <select id="type">
+                <option value="external">External spur gear</option>
+                <option value="internal">Internal spur gear</option>
+                <option value="rack">Rack</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Units</span>
+              <select id="units">
+                <option value="mm" selected>mm</option>
+                <option value="in">inch</option>
+              </select>
+            </label>
+
+            <div class="divider"></div>
+
+            <label class="field">
+              <span>Teeth (N)</span>
+              <input id="teeth" type="number" min="4" step="1" value="24" />
+              <small>For rack: this becomes “teeth shown” in preview only.</small>
+            </label>
+
+            <label class="field">
+              <span>Pitch diameter (D)</span>
+              <input id="pitchDiameter" type="number" min="1" step="0.01" value="48" />
+              <small>Defines the module: m = D / N</small>
+            </label>
+
+            <label class="field">
+              <span>Pressure angle</span>
+              <select id="pressureAngle">
+                <option value="14.5">14.5°</option>
+                <option value="20" selected>20°</option>
+                <option value="25">25°</option>
+              </select>
+              <small>20° is the common modern default.</small>
+            </label>
+
+            <label class="field">
+              <span>Backlash (at pitch)</span>
+              <input id="backlash" type="number" min="0" step="0.001" value="0.0" />
+              <small>Reduces tooth thickness by this amount.</small>
+            </label>
+
+            <div class="divider"></div>
+
+            <label class="field">
+              <span>Addendum (a)</span>
+              <input id="addendum" type="number" min="0" step="0.01" value="0" />
+              <small>0 = use standard a = m</small>
+            </label>
+
+            <label class="field">
+              <span>Dedendum (b)</span>
+              <input id="dedendum" type="number" min="0" step="0.01" value="0" />
+              <small>0 = use standard b = 1.25m</small>
+            </label>
+
+            <label class="field">
+              <span>Rack length</span>
+              <input id="rackLength" type="number" min="1" step="0.1" value="120" />
+              <small>Only used for rack preview/export.</small>
+            </label>
+
+            <label class="field">
+              <span>Samples / tooth flank</span>
+              <input id="samples" type="number" min="12" step="1" value="48" />
+              <small>Higher = smoother involute; heavier SVG.</small>
+            </label>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="cardHead">
+            <h2>Outputs</h2>
+            <p class="muted">Key CAD-ready values. Copy button formats these as a neat block.</p>
+          </div>
+          <pre class="out" id="dims">—</pre>
+          <div class="hint">
+            <span class="pill">Tip</span>
+            For 3D printing, you usually want a bit of backlash and/or clearance.
+          </div>
+        </section>
+
+        <section class="card cardTight">
+          <details>
+            <summary>Assumptions (read if something looks “off”)</summary>
+            <div class="detailsBody">
+              <ul>
+                <li>Involute spur gear model (no helix, no profile shift).</li>
+                <li>Default addendum a = m, dedendum b = 1.25m unless overridden.</li>
+                <li>Internal gear preview is a ring gear: teeth cut inwards.</li>
+                <li>Rack uses straight flanks at the chosen pressure angle.</li>
+              </ul>
+              <p class="muted">Want profile shift, tip relief, undercut warning, or DXF export? Say so and I’ll add it.</p>
+            </div>
+          </details>
+        </section>
+      </aside>
+
+      <section class="stage" aria-label="Preview">
+        <div class="stageTop">
+          <div>
+            <div class="stageTitle">Preview</div>
+            <div class="stageSub">Dimensioned blueprint. Zoom/pan included.</div>
+          </div>
+          <div class="zoom">
+            <button class="btnTiny" id="zoomOut" type="button">−</button>
+            <button class="btnTiny" id="zoomReset" type="button">Reset</button>
+            <button class="btnTiny" id="zoomIn" type="button">+</button>
+          </div>
+        </div>
+
+        <div class="viewport" id="viewport" role="img" aria-label="Gear blueprint preview">
+          <svg id="svg" xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" aria-hidden="false">
+            <defs>
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(224,251,252,0.08)" stroke-width="1" />
+              </pattern>
+              <pattern id="micro" width="8" height="8" patternUnits="userSpaceOnUse">
+                <path d="M 8 0 L 0 0 0 8" fill="none" stroke="rgba(224,251,252,0.05)" stroke-width="1" />
+              </pattern>
+              <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="2" result="b"/>
+                <feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.35 0" result="g"/>
+                <feMerge>
+                  <feMergeNode in="g"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+
+            <rect x="0" y="0" width="1200" height="800" fill="url(#micro)" />
+            <rect x="0" y="0" width="1200" height="800" fill="url(#grid)" />
+
+            <g id="camera">
+              <g id="drawing"></g>
+              <g id="dimsLayer"></g>
+            </g>
+
+            <g class="legend">
+              <rect x="28" y="28" rx="14" ry="14" width="340" height="124" fill="rgba(13,27,42,0.72)" stroke="rgba(224,251,252,0.18)" />
+              <text x="52" y="64" class="legendTitle">GEOMETRY</text>
+              <text x="52" y="90" class="legendText" id="legendLine1">—</text>
+              <text x="52" y="114" class="legendText" id="legendLine2">—</text>
+              <text x="52" y="138" class="legendText" id="legendLine3">—</text>
+            </g>
+          </svg>
+        </div>
+
+        <footer class="footer">
+          <div class="muted">Built for CAD: dimensions are the contract; preview is the sanity check.</div>
+          <div class="muted">v0.1 • GitHub Pages ready</div>
+        </footer>
+      </section>
+    </main>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
