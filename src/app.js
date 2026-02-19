@@ -100,10 +100,10 @@ function applySvgStyles(){
   if(els.svg.querySelector('style[data-inline]')) return;
   const style = svgEl('style', { 'data-inline':'true' });
   style.textContent = `
-    .gearStroke{ fill:none; stroke: rgba(224,251,252,0.92); stroke-width:2.2; filter:url(#softGlow); }
-    .pitch{ fill:none; stroke: rgba(255,209,102,0.78); stroke-width:1.1; stroke-dasharray: 6 8; }
-    .base{ fill:none; stroke: rgba(69,243,255,0.55); stroke-width:1.1; stroke-dasharray: 3 6; }
-    .root{ fill:none; stroke: rgba(255,92,122,0.45); stroke-width:1.1; stroke-dasharray: 8 7; }
+    .gearStroke{ fill:none; stroke: rgba(224,251,252,0.92); stroke-width:1.15; }
+    .pitch{ fill:none; stroke: rgba(255,209,102,0.70); stroke-width:0.9; stroke-dasharray: 6 8; }
+    .base{ fill:none; stroke: rgba(69,243,255,0.45); stroke-width:0.9; stroke-dasharray: 3 6; }
+    .root{ fill:none; stroke: rgba(255,92,122,0.35); stroke-width:0.9; stroke-dasharray: 8 7; }
     .centerDot{ fill: rgba(255,209,102,0.92); }
     .dimLine{ stroke: rgba(224,251,252,0.55); stroke-width:1.2; }
     .dimText{ fill: rgba(224,251,252,0.78); font-family: ${getComputedStyle(document.documentElement).getPropertyValue('--mono')}; font-size: 12px; }
