@@ -9,7 +9,7 @@ export function fmt(val, unit){
 }
 
 export function computeGear(inp){
-  const { type, units, N, D, phi, backlash, addendum, dedendum, rackLength, thickness } = inp;
+  const { type, units, N, D, phi, backlash, addendum, dedendum, rackLength } = inp;
 
   // For rack: we still derive module from D/N if given; fallback to 2mm if nonsense.
   const m = (type === 'rack')
@@ -66,7 +66,6 @@ export function computeGear(inp){
     Dt_int: Do_int_tip,
     Dro_int: Dr_int_root,
     rackLength,
-    thickness: (Number.isFinite(thickness) && thickness>0) ? thickness : 0,
     undercutRisk,
     NminNoUndercut,
   };

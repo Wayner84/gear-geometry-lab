@@ -14,7 +14,7 @@ const els = {
   addendum: $('addendum'),
   dedendum: $('dedendum'),
   rackLength: $('rackLength'),
-  thickness: $('thickness'),
+  // thickness removed (2D-only exports)
   samples: $('samples'),
 
   dims: $('dims'),
@@ -51,10 +51,10 @@ function readInputs(){
   const addendum = Number(els.addendum.value);
   const dedendum = Number(els.dedendum.value);
   const rackLength = Number(els.rackLength.value);
-  const thickness = Number(els.thickness.value);
+  // thickness removed (2D-only)
   const samples = Math.max(12, Math.floor(Number(els.samples.value) || 48));
 
-  return { type, units, N, D, phi, backlash, addendum, dedendum, rackLength, thickness, samples };
+  return { type, units, N, D, phi, backlash, addendum, dedendum, rackLength, samples };
 }
 
 function setFieldVisibility(){
@@ -270,7 +270,7 @@ function initPanZoom(){
 }
 
 function bind(){
-  const ids = ['type','units','teeth','pitchDiameter','pressureAngle','backlash','addendum','dedendum','rackLength','thickness','samples'];
+  const ids = ['type','units','teeth','pitchDiameter','pressureAngle','backlash','addendum','dedendum','rackLength','samples'];
   for(const id of ids){
     $(id).addEventListener('input', update);
     $(id).addEventListener('change', update);
