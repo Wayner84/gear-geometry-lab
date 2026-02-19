@@ -1,5 +1,6 @@
 import { computeGear, buildExternalGearPath, buildInternalGearPath, buildRackPath, fmt, downloadText, copyTextToClipboard } from './gear.js';
 import { dxfFromPolylines } from './dxf.js';
+import { bboxFromPolylines, fitScaleToViewBox } from './fit.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -38,6 +39,7 @@ const els = {
 let camera = { x: 0, y: 0, k: 1 };
 let isPanning = false;
 let panStart = null;
+let autoFit = true;
 
 function readInputs(){
   const type = els.type.value;
@@ -170,7 +172,7 @@ function update(){
   const g = svgEl('g', { transform: cameraTransform() });
   const dimsG = svgEl('g', { transform: cameraTransform() });
 
-  const cx = 600, cy = 420;
+  const cx = 600, cy = 380;
 
   // Keep last generated outline points (for DXF)
   window.__lastPolylines = [];
@@ -202,6 +204,21 @@ function update(){
     drawDimLine(dimsG, cx - c.D/2, cy + c.D/2 + 32, cx + c.D/2, cy + c.D/2 + 32, `D ${fmt(c.D, unit)} ${unitLabel}`);
   }
 
+  // Auto-fit on first render (or after reset)
+  if(autoFit){
+    const vb = els.svg.viewBox.baseVal;
+    const viewBox = { w: vb.width || 1200, h: vb.height || 800 };
+    const bbox = bboxFromPolylines(window.__lastPolylines);
+    const kFit = fitScaleToViewBox(bbox, viewBox, 110);
+    camera.k = kFit;
+    camera.x = 0;
+    camera.y = 0;
+
+    // re-apply transforms after fitting
+    g.setAttribute('transform', cameraTransform());
+    dimsG.setAttribute('transform', cameraTransform());
+  }
+
   els.drawing.appendChild(g);
   els.dimsLayer.appendChild(dimsG);
 }
@@ -213,7 +230,8 @@ function cameraTransform(){
 }
 
 function setCamera(k, dx=0, dy=0){
-  camera.k = Math.max(0.3, Math.min(5, k));
+  autoFit = false;
+  camera.k = Math.max(0.3, Math.min(20, k));
   camera.x += dx;
   camera.y += dy;
   update();
@@ -221,6 +239,7 @@ function setCamera(k, dx=0, dy=0){
 
 function initPanZoom(){
   els.viewport.addEventListener('pointerdown', (e) => {
+    autoFit = false;
     isPanning = true;
     els.viewport.setPointerCapture(e.pointerId);
     panStart = { x: e.clientX, y: e.clientY, ox: camera.x, oy: camera.y };
@@ -237,6 +256,7 @@ function initPanZoom(){
   els.viewport.addEventListener('pointercancel', () => { isPanning=false; panStart=null; });
 
   els.viewport.addEventListener('wheel', (e) => {
+    autoFit = false;
     e.preventDefault();
     const delta = Math.sign(e.deltaY);
     const factor = delta > 0 ? 0.92 : 1.08;
@@ -245,7 +265,7 @@ function initPanZoom(){
 
   els.zoomIn.addEventListener('click', () => setCamera(camera.k * 1.12));
   els.zoomOut.addEventListener('click', () => setCamera(camera.k * 0.90));
-  els.zoomReset.addEventListener('click', () => { camera = { x:0, y:0, k:1 }; update(); });
+  els.zoomReset.addEventListener('click', () => { camera = { x:0, y:0, k:1 }; autoFit = true; update(); });
 }
 
 function bind(){
