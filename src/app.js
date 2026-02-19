@@ -1,4 +1,5 @@
 import { computeGear, buildExternalGearPath, buildInternalGearPath, buildRackPath, fmt, downloadText, copyTextToClipboard } from './gear.js';
+import { dxfFromPolylines } from './dxf.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -12,6 +13,7 @@ const els = {
   addendum: $('addendum'),
   dedendum: $('dedendum'),
   rackLength: $('rackLength'),
+  thickness: $('thickness'),
   samples: $('samples'),
 
   dims: $('dims'),
@@ -25,6 +27,7 @@ const els = {
 
   btnCopyDims: $('btnCopyDims'),
   btnDownloadSVG: $('btnDownloadSVG'),
+  btnDownloadDXF: $('btnDownloadDXF'),
 
   zoomIn: $('zoomIn'),
   zoomOut: $('zoomOut'),
@@ -46,9 +49,10 @@ function readInputs(){
   const addendum = Number(els.addendum.value);
   const dedendum = Number(els.dedendum.value);
   const rackLength = Number(els.rackLength.value);
+  const thickness = Number(els.thickness.value);
   const samples = Math.max(12, Math.floor(Number(els.samples.value) || 48));
 
-  return { type, units, N, D, phi, backlash, addendum, dedendum, rackLength, samples };
+  return { type, units, N, D, phi, backlash, addendum, dedendum, rackLength, thickness, samples };
 }
 
 function setFieldVisibility(){
@@ -132,6 +136,9 @@ function update(){
   lines.push(`Tooth thickness at pitch (with backlash): ${fmt(c.s, unit)} ${unitLabel}`);
   lines.push('');
 
+  lines.push(`Thickness (face width): ${fmt(c.thickness, unit)} ${unitLabel}`);
+  lines.push('');
+
   if(inp.type === 'rack'){
     lines.push(`Rack length: ${fmt(c.rackLength, unit)} ${unitLabel}`);
     lines.push(`Rack addendum: ${fmt(c.a, unit)} ${unitLabel}`);
@@ -165,14 +172,18 @@ function update(){
 
   const cx = 600, cy = 420;
 
+  // Keep last generated outline points (for DXF)
+  window.__lastPolylines = [];
+
   if(inp.type === 'rack'){
     const rack = buildRackPath(c, inp, { x: cx - c.rackLength/2, y: cy });
-    g.append(rack);
+    g.append(rack.el);
+    window.__lastPolylines = [rack.points];
 
     // dim line: rack length
     drawDimLine(dimsG, cx - c.rackLength/2, cy + (c.a + c.b) + 28, cx + c.rackLength/2, cy + (c.a + c.b) + 28, `L ${fmt(c.rackLength, unit)} ${unitLabel}`);
   } else {
-    const path = inp.type === 'internal'
+    const gear = inp.type === 'internal'
       ? buildInternalGearPath(c, inp, { cx, cy })
       : buildExternalGearPath(c, inp, { cx, cy });
 
@@ -182,7 +193,8 @@ function update(){
     const root = svgEl('circle', { cx, cy, r: c.Dr/2, class: 'root' });
     const center = svgEl('circle', { cx, cy, r: 3.2, class: 'centerDot' });
 
-    g.append(pitch, base, root, path, center);
+    g.append(pitch, base, root, gear.el, center);
+    window.__lastPolylines = [gear.points];
 
     // dim: outside diameter
     drawDimLine(dimsG, cx - c.Do/2, cy - c.Do/2 - 32, cx + c.Do/2, cy - c.Do/2 - 32, `Do ${fmt(c.Do, unit)} ${unitLabel}`);
@@ -237,7 +249,7 @@ function initPanZoom(){
 }
 
 function bind(){
-  const ids = ['type','units','teeth','pitchDiameter','pressureAngle','backlash','addendum','dedendum','rackLength','samples'];
+  const ids = ['type','units','teeth','pitchDiameter','pressureAngle','backlash','addendum','dedendum','rackLength','thickness','samples'];
   for(const id of ids){
     $(id).addEventListener('input', update);
     $(id).addEventListener('change', update);
@@ -259,6 +271,12 @@ function bind(){
     }
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n` + clone.outerHTML;
     downloadText('gear-geometry.svg', xml, 'image/svg+xml');
+  });
+
+  els.btnDownloadDXF.addEventListener('click', () => {
+    const polys = window.__lastPolylines || [];
+    const dxf = dxfFromPolylines(polys, { layer: 'GEAR' });
+    downloadText('gear-geometry.dxf', dxf, 'application/dxf');
   });
 }
 

@@ -27,6 +27,7 @@
 
       <div class="topActions">
         <button class="btn" id="btnDownloadSVG" type="button">Download SVG</button>
+        <button class="btn" id="btnDownloadDXF" type="button">Download DXF</button>
         <button class="btn btnPrimary" id="btnCopyDims" type="button">Copy dimensions</button>
       </div>
     </header>
@@ -108,9 +109,15 @@
             </label>
 
             <label class="field">
+              <span>Thickness (face width)</span>
+              <input id="thickness" type="number" min="0" step="0.1" value="6" />
+              <small>Not in 2D geometry; use this for CAD extrusion / 3D export.</small>
+            </label>
+
+            <label class="field">
               <span>Samples / tooth flank</span>
               <input id="samples" type="number" min="12" step="1" value="48" />
-              <small>Higher = smoother involute; heavier SVG.</small>
+              <small>Higher = smoother involute; heavier exports.</small>
             </label>
           </div>
         </section>

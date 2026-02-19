@@ -9,7 +9,7 @@ export function fmt(val, unit){
 }
 
 export function computeGear(inp){
-  const { type, units, N, D, phi, backlash, addendum, dedendum, rackLength } = inp;
+  const { type, units, N, D, phi, backlash, addendum, dedendum, rackLength, thickness } = inp;
 
   // For rack: we still derive module from D/N if given; fallback to 2mm if nonsense.
   const m = (type === 'rack')
@@ -66,6 +66,7 @@ export function computeGear(inp){
     Dt_int: Do_int_tip,
     Dro_int: Dr_int_root,
     rackLength,
+    thickness: (Number.isFinite(thickness) && thickness>0) ? thickness : 0,
     undercutRisk,
     NminNoUndercut,
   };
@@ -201,7 +202,7 @@ export function buildExternalGearPath(c, inp, { cx, cy }){
   }
 
   const d = pathFromPoints(all, true);
-  return svgPath(d);
+  return { el: svgPath(d), points: all };
 }
 
 export function buildInternalGearPath(c, inp, { cx, cy }){
@@ -282,7 +283,7 @@ export function buildInternalGearPath(c, inp, { cx, cy }){
   }
 
   const d = pathFromPoints(all, true);
-  return svgPath(d);
+  return { el: svgPath(d), points: all };
 }
 
 export function buildRackPath(c, inp, { x, y }){
@@ -339,7 +340,7 @@ export function buildRackPath(c, inp, { x, y }){
   pts.push({ x: x1, y: y + b });
 
   const d = pathFromPoints(pts.map(p => p), true);
-  return svgPath(d);
+  return { el: svgPath(d), points: pts };
 }
 
 function svgPath(d){
